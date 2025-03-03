@@ -1,45 +1,45 @@
 const express = require('express');
-const {PrismaClient} = require("@prisma/client");
-const bodyParser = require("body-parser")
+const { PrismaClient } = require("@prisma/client");
+const bodyParser = require("body-parser");
+const crypto = require("crypto-js");
+require("dotenv").config();
+
+function encodeData(data) { return crypto.AES.encrypt(data, process.env.SECRET_KEY).toString(); }
+
+function decodeData(eddata) { return crypto.AES.decrypt(eddata, process.env.SECRET_KEY).toString(crypto.enc.Utf8); }
 
 const app = express()
 app.use(bodyParser.json())
-const prisma =  new PrismaClient();
+const prisma = new PrismaClient();
 const port = 3000
 
 app.get('/', (req, res) => {
-  res.send('Hello World!')
+    res.send('Hello World!')
 })
 
-app.get('/user', async (req,res) =>{
-    // const data = await prisma.user.findMany();
-    const data = await prisma.$queryRaw `select id, username, cardid from user`;
-    //const finalDAta = await data.map(record =>{
-        //console.log('record', record)
-        //dalete record.password;
-        //return record;
-    //});
+app.get('/user', async (req, res) => {
+    const data = await prisma.$queryRaw`select id, username, cardid from user`;
+    const finalData = await data.map(record => ({ ...record, cardId: decodeData(record.cardId), username : decodeData(record.username) }));
     res.json({
         message: 'okay',
-        //data: finalDAta
-        data
-    })
+        data: finalData
+    });
 });
 
-app.post('/user', async (req, res) =>{
+app.post('/user', async (req, res) => {
     console.log(req.body)
     const response = await prisma.user.create({
         data: {
-            username: req.body.username,
-            password: req.body.password, //{} => req.body ---> if all fill match
-            cardId: req.body.cardId
+            username: encodeData(req.body.username),
+            password: encodeData(req.body.password),
+            cardId: encodeData(req.body.cardId)
         }
     });
-    if(response){
+    if (response) {
         res.json({
             message: "add successfully"
         })
-    }else{
+    } else {
         res.json9({
             message: "failed"
         })
@@ -59,35 +59,37 @@ app.put('/user', async (req, res) => {
             password: req.body.password
         }
     });
-    if (response) { 
+    if (response) {
         res.json({
             message: "update sucessfully"
         })
-    } else { 
+    } else {
         res.json({
             message: "update fail"
-    })}
+        })
+    }
 });
 
 app.delete('/user', async (req, res) => {
-   const response = await prisma.user.delete({
-    where: {
-        id: req.body.id
-    },
-    select:{
-        username: true
-    }
-   });
-   if (response) { 
-    res.json({
-        message: "dalete sucessfully"
-         })
-    } else { 
+    const response = await prisma.user.delete({
+        where: {
+            id: req.body.id
+        },
+        select: {
+            username: true
+        }
+    });
+    if (response) {
+        res.json({
+            message: "dalete sucessfully"
+        })
+    } else {
         res.json({
             message: "dalete fail"
-    })}
+        })
+    }
 });
 
 app.listen(port, () => {
-  console.log(`server is running on port ${port}`)
+    console.log(`server is running on port ${port}`)
 })

@@ -37,6 +37,52 @@ app.post('/user', async (req, res) =>{
         })
     }
 });
+// edit user
+app.put('/user/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { username, password } = req.body;
+
+        let updateData = {};
+        if (username) updateData.username = username;
+        if (password) updateData.password = password;//await bcrypt.hash(password, 10); // encripion
+        const response = await prisma.user.update({
+            where: { id: Number(id) },
+            data: updateData
+        });
+
+        res.json({
+            message: "User updated successfully",
+            user: response
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: "Error updating user",
+            error: error.message
+        });
+    }
+});
+
+// delete ID
+app.delete('/user/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        await prisma.user.delete({
+            where: { id: Number(id) }
+        });
+
+        res.json({
+            message: "User deleted successfully"
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: "Error deleting user",
+            error: error.message
+        });
+    }
+});
+
 
 app.listen(port, () => {
   console.log(`server is running on port ${port}`)

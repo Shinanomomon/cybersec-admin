@@ -6,7 +6,10 @@ require("dotenv").config();
 
 function encodeData(data) { return crypto.AES.encrypt(data, process.env.SECRET_KEY).toString(); }
 
-function decodeData(eddata) { return crypto.AES.decrypt(eddata, process.env.SECRET_KEY).toString(crypto.enc.Utf8); }
+function decodeData(data) { return crypto.AES.decrypt(data, process.env.SECRET_KEY).toString(crypto.enc.Utf8); }
+
+function encodePs(data) { return crypto.enc.Base64.stringify(crypto.HmacSHA256(data,process.env.SECRET_KEY)); }
+
 
 const app = express()
 app.use(bodyParser.json())
@@ -31,7 +34,7 @@ app.post('/user', async (req, res) => {
     const response = await prisma.user.create({
         data: {
             username: encodeData(req.body.username),
-            password: encodeData(req.body.password),
+            password: encodePs(req.body.password),
             cardId: encodeData(req.body.cardId)
         }
     });
